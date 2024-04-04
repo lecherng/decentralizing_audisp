@@ -22,14 +22,10 @@ __status__ = ""
 import os
 import signal
 import sys
-import auparse
-import re
 from circularBuffer import StringCircularBuffer
+from util import Util
+from auParser import AuParser
 from threading import Thread
-
-from ecies.utils import generate_key
-from ecies import encrypt, decrypt
-
 
 stop = 0
 hup = 0
@@ -54,28 +50,11 @@ signal.signal(signal.SIGTERM, termHandler)
 
 #buf=sys.stdin.readlines()
 programname = os.path.basename(sys.argv[0])
-
-def auditParse(auParser, rbAuditEvent):
-    auParser.reset()
-    decodedProctitle = ''
-    while True:
-        if not auParser.first_record():
-            sys.exit(1)
-
-        eventString = auParser.get_record_text()
-        
-        # handling the hex to string conversion in auditd log.
-        if auParser.get_type_name() == "PROCTITLE":
-            decodedProctitle = "proctitle=%s" % (bytes.fromhex(re.sub(r'00', "20", str(auParser.find_field("proctitle")))).decode('utf-8'))
-            eventString = re.sub(r'proctitle=.*$', decodedProctitle, eventString)
-        buf = "%s\n" % eventString
-        rbAuditEvent.enqueue("%s\n" % eventString)
-
-        if not auParser.parse_next_event(): break
         
 def auditDispatcherThread(rbAuditEvent):
     global stop
     global hup
+    auparser = AuParser(rbAuditEvent)
 
     while stop == 0:
         try:
@@ -86,76 +65,43 @@ def auditDispatcherThread(rbAuditEvent):
                 reloadConfig()
                 continue
             for line in f.readlines():
-                auParser = auparse.AuParser(auparse.AUSOURCE_BUFFER, line)
-                auditParse(auParser, rbAuditEvent)
+                auparser.auditParse(line)
             #print(str(rb))
         except IOError as e:
-            print(e)
+            print("IOError: %s" % (e))
             continue
+        except ValueError as e:
+            print("ValueError %s" % (e))
         stop = 1
-
-def writeToLogFile(filename, buffer):
-    try:  
-        f = open(filename, "a")
-        f.write(buffer)
-        f.close()      
-    except IOError as e:
-        print(e)
-        f.close()
-
-def encryptLogFile(filename, buf):
-        secp_k = generate_key()
-        sk_bytes = secp_k.secret
-        pk_bytes = secp_k.public_key.format(True)
-        
-        #print(sk_bytes)
-        #print(pk_bytes)
-
-        #f = open(filename, 'r')
-        #print(f.read().encode("utf-8"))
-
-        #print()
-        f1 = open("%s_encrypted" % (filename), 'wb')
-        encrypted = encrypt(pk_bytes, buf)
-        f1.write(encrypted)
-        f1.close()
-
-        f2 = open("%s_encrypted" % (filename), 'rb')
-        encrypted2 = f2.read()
-        
-        print(decrypt(sk_bytes, encrypted2))
 
 def auditLoggerThread(filename, rbAuditEvent):
     global stop
     global hup
 
-    indexLogFile = 0
+    util = Util(filename)
 
-              
-    # ringBuffer for 512Kb
-    rbLogger = StringCircularBuffer(4)
+    # ringBuffer for 512 Security Events
+    rbLogger = StringCircularBuffer(512)
     while True:
-        if not rbAuditEvent.is_empty() and not rbLogger.is_full():
-            rbLogger.enqueue(rbAuditEvent.dequeue())
+        try:
+            if not rbAuditEvent.is_empty() and not rbLogger.is_full():
+                rbLogger.enqueue(rbAuditEvent.dequeue())
 
-        if rbLogger.is_full():
-            #while not rbLogger.is_empty():
-            #    writeToLogFile("%s_%d.txt" % (filename, indexLogFile), rbLogger.dequeue())
-            encryptLogFile("%s_%d.txt" % (filename, indexLogFile), rbLogger.flush_content())
-            indexLogFile += 1
-            continue
-        #get the last piece of data out from the ring buffer.
-        elif not rbAuditEvent.is_empty():
-            continue
-        elif stop:
-            #while not rbLogger.is_empty():
-            #    writeToLogFile("%s_%d.txt" % (filename, indexLogFile), rbLogger.dequeue())
-            encryptLogFile("%s_%d.txt" % (filename, indexLogFile), rbLogger.flush_content())
-            indexLogFile += 1
+            if rbLogger.is_full():
+                util.encryptLogFile(rbLogger.flush_content())
+                continue
+            #get the last piece of data out from the ring buffer.
+            elif not rbAuditEvent.is_empty():
+                continue
+            elif stop:
+                util.encryptLogFile(rbLogger.flush_content())
+                break
+        except Exception as e:
+            print("unable to enqueue/dequeue to ringbuffer: %s" % (e))
             break
 
 def main():
-    rbAuditEvent = StringCircularBuffer(16384)
+    rbAuditEvent = StringCircularBuffer(8196)
     filename = "demofile"
 
     threads = []
@@ -172,7 +118,6 @@ def main():
     
     t1.join()
     t2.join()
-
 
 if  __name__ =='__main__':
         main()

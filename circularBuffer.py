@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 class StringCircularBuffer(object):
-
     def __init__(self, max_size=10):
         """Initialize the CircularBuffer with a max_size if set, otherwise
         max_size will elementsdefault to 10"""
@@ -38,10 +37,10 @@ class StringCircularBuffer(object):
             raise OverflowError (
                 "CircularBuffer is full, unable to enqueue item"
             )
-        #if not isinstance(item, str):
-        #    raise TypeError (
-        #        "Invalid type"
-        #    )
+        if not isinstance(item, str):
+            raise TypeError (
+                "Invalid type"
+            )
         
         self.buffer[self.tail] = item
         #self.tail = (self.tail + 1) % self.max_size 
@@ -79,7 +78,6 @@ class StringCircularBuffer(object):
     
     def flush_content(self):
         """Flush all the content."""
-
         if self.isEmpty:
             return None
         
@@ -88,7 +86,6 @@ class StringCircularBuffer(object):
         self.front()
         self.tail = self.head
         return items
-    
 
 def main():
     rb = StringCircularBuffer(7)
