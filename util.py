@@ -7,6 +7,7 @@ class Util(object):
 
     def __init__(self, filename, secretKey=None):
         self.filename = filename
+        self.filenameEncrypted = "%s_encrypted" % (filename)
         self.index = 0
         if secretKey == None:
             self.secretKey = generate_key()
@@ -17,9 +18,9 @@ class Util(object):
         self.pk_bytes = self.secretKey.public_key.format(True)
 
 
-    def writeToLogFile(self, buffer):
+    def writeToLogFile(self, buffer, index):
         try:
-            f = open(self.filename, 'wb')
+            f = open("%s_%d" % (self.filenameEncrypted, index), 'wb')
             f.write(buffer)
             f.close()
             self.index += 1
@@ -27,10 +28,10 @@ class Util(object):
             print(e)
             f.close()
 
-    def readFromLogFile(self):
+    def readFromLogFile(self, index):
         buf = ""
         try:
-            f = open(self.filename, 'rb')
+            f = open("%s_%d" % (self.filenameEncrypted, index), 'rb')
             buf = f.read()
         except IOError as e:
             print(e)
@@ -39,11 +40,12 @@ class Util(object):
 
     def encryptLogFile(self, buf):
             encrypted = encrypt(self.pk_bytes, buf)
-
-            self.filename = "%s_%d.encrypted" % (self.filename, self.index)
+            currentIndex = self.index
+            self.filename = "%s_%d" % (self.filenameEncrypted, currentIndex)
             try:
-                self.writeToLogFile(encrypted)
+                self.writeToLogFile(encrypted, currentIndex)
             except IOError as e:
+                print(e)
                 return
 
-            print(decrypt(self.sk_bytes, self.readFromLogFile()))
+            print("%d: %s" % (currentIndex, decrypt(self.sk_bytes, self.readFromLogFile(currentIndex))))

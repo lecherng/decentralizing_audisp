@@ -29,16 +29,18 @@ from threading import Thread
 
 stop = 0
 hup = 0
+debug = 0
 
-def termHandler(sig, msg):
+def termHandler(signum, _):
     global stop 
-    print("received a %d event, message: %d", sig, msg)
+    signame = signal.Signals(signum).name
+    print(f'Signal handler called with signal {signame} ({signum})')
     stop = 1
-    sys.exit(0)
 
-def hupHandler(sig, msg):
+def hupHandler(signum, _):
     global hup
-    print("received a %d event, message: %s", sig, msg)
+    signame = signal.Signals(signum).name
+    print(f'Signal handler called with signal {signame} ({signum})')
     hup = 1
 
 def reloadConfig():
@@ -47,9 +49,7 @@ def reloadConfig():
 
 signal.signal(signal.SIGHUP, hupHandler)
 signal.signal(signal.SIGTERM, termHandler)
-
-#buf=sys.stdin.readlines()
-programname = os.path.basename(sys.argv[0])
+signal.signal(signal.SIGINT, termHandler)
         
 def auditDispatcherThread(rbAuditEvent):
     global stop
@@ -58,13 +58,17 @@ def auditDispatcherThread(rbAuditEvent):
 
     while stop == 0:
         try:
-            #buf=sys.stdin.readlines()
-            #buf=sys.stdin
-            f = open("test.log", "r")
+            if debug == 1:
+                f = open("test.log", "r")
+                buf = f.readlines()
+            else:
+                buf=sys.stdin.readlines() # for testing
+                #buf=sys.stdin            # for actual
+
             if hup == 1 :
                 reloadConfig()
                 continue
-            for line in f.readlines():
+            for line in buf:
                 auparser.auditParse(line)
             #print(str(rb))
         except IOError as e:
@@ -72,7 +76,7 @@ def auditDispatcherThread(rbAuditEvent):
             continue
         except ValueError as e:
             print("ValueError %s" % (e))
-        stop = 1
+        if debug == 1: stop = 1
 
 def auditLoggerThread(filename, rbAuditEvent):
     global stop
@@ -111,10 +115,6 @@ def main():
     t2.start()
     threads.append(t1)
     threads.append(t2)
-    
-    while stop == 0:
-          if stop == 1:
-                break
     
     t1.join()
     t2.join()
