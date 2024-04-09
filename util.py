@@ -2,22 +2,28 @@
 from ecies.utils import generate_key
 from ecies import encrypt, decrypt
 import logging
+import binascii
+
 logger = logging.getLogger(__name__)
 
 class Util(object):
 
-    def __init__(self, filename, secretKey=None):
+    def __init__(self, filename, pubKey=None, privKey=None):
         self.filename = filename
         self.filenameEncrypted = "%s_encrypted" % (filename)
         self.index = 0
-        if secretKey == None:
-            self.secretKey = generate_key()
+        if privKey == None:
+            self.sk_bytes = generate_key().secret
         else:
-            self.secretKey = secretKey
+            self.sk_bytes = privKey
 
-        self.sk_bytes = self.secretKey.secret
-        self.pk_bytes = self.secretKey.public_key.format(True)
+        if pubKey == None:
+            self.pk_bytes = self.sk_bytes.public_key.format(False)
+        else:
+            self.pk_bytes = pubKey
 
+        logger.debug(f'pubKey {binascii.hexlify(self.pk_bytes)}')
+        logger.debug(f'privKey {binascii.hexlify(self.sk_bytes)}')
 
     def writeToLogFile(self, buffer, index):
         try:
@@ -49,4 +55,4 @@ class Util(object):
                 logger.error("IOError: %s" % (e))
                 return
 
-            #logger.info("Decrypted: %s" % (decrypt(self.sk_bytes, self.readFromLogFile(currentIndex))))
+            logger.debug("Decrypted: %s" % (decrypt(self.sk_bytes, self.readFromLogFile(currentIndex))))

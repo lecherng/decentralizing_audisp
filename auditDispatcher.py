@@ -81,11 +81,9 @@ def auditDispatcherThread(rbAuditEvent):
             logger.error("ValueError %s" % (e))
         if debug == 1: stop = 1
 
-def auditLoggerThread(filename, rbAuditEvent):
+def auditLoggerThread(rbAuditEvent, util):
     global stop
     global hup
-
-    util = Util(filename)
 
     # ringBuffer for 512 Security Events
     rbLogger = StringCircularBuffer(6144)
@@ -111,13 +109,24 @@ def main():
     rbAuditEvent = StringCircularBuffer(16392)
     logging.basicConfig(filename='logger.log', level=logging.INFO)
     filename = "demofile"
+    pubKeyFile = "pubKey"
+    privKeyFile = "privKey"
+
+    f = open(pubKeyFile, 'rb')
+    pubKey = f.read()
+    f.close()
+
+    f = open(privKeyFile, 'rb')
+    privKey = f.read()
+    f.close()
+
+    util = Util(filename, pubKey, privKey)
 
     logger.info("Start")
-    
 
     threads = []
     t1 = Thread(target=auditDispatcherThread, args=(rbAuditEvent,))
-    t2 = Thread(target=auditLoggerThread, args=(filename, rbAuditEvent,))
+    t2 = Thread(target=auditLoggerThread, args=(rbAuditEvent, util,))
     t1.start()
     t2.start()
     threads.append(t1)
