@@ -26,6 +26,9 @@ from circularBuffer import StringCircularBuffer
 from util import Util
 from auParser import AuParser
 from threading import Thread
+import logging
+
+logger = logging.getLogger(__name__)
 
 stop = 0
 hup = 0
@@ -34,13 +37,13 @@ debug = 0
 def termHandler(signum, _):
     global stop 
     signame = signal.Signals(signum).name
-    print(f'Signal handler called with signal {signame} ({signum})')
+    logger.info(f'Signal handler called with signal {signame} ({signum})')
     stop = 1
 
 def hupHandler(signum, _):
     global hup
     signame = signal.Signals(signum).name
-    print(f'Signal handler called with signal {signame} ({signum})')
+    logger.info(f'Signal handler called with signal {signame} ({signum})')
     hup = 1
 
 def reloadConfig():
@@ -62,20 +65,20 @@ def auditDispatcherThread(rbAuditEvent):
                 f = open("test.log", "r")
                 buf = f.readlines()
             else:
-                buf=sys.stdin.readlines() # for testing
-                #buf=sys.stdin            # for actual
+                #buf=sys.stdin.readlines() # for testing
+                buf=sys.stdin            # for actual
 
             if hup == 1 :
                 reloadConfig()
                 continue
             for line in buf:
+                #logger.info(line)
                 auparser.auditParse(line)
-            #print(str(rb))
         except IOError as e:
-            print("IOError: %s" % (e))
+            logger.error("IOError: %s" % (e))
             continue
         except ValueError as e:
-            print("ValueError %s" % (e))
+            logger.error("ValueError %s" % (e))
         if debug == 1: stop = 1
 
 def auditLoggerThread(filename, rbAuditEvent):
@@ -85,7 +88,7 @@ def auditLoggerThread(filename, rbAuditEvent):
     util = Util(filename)
 
     # ringBuffer for 512 Security Events
-    rbLogger = StringCircularBuffer(512)
+    rbLogger = StringCircularBuffer(6144)
     while True:
         try:
             if not rbAuditEvent.is_empty() and not rbLogger.is_full():
@@ -101,12 +104,16 @@ def auditLoggerThread(filename, rbAuditEvent):
                 util.encryptLogFile(rbLogger.flush_content())
                 break
         except Exception as e:
-            print("unable to enqueue/dequeue to ringbuffer: %s" % (e))
+            logger.error("unable to enqueue/dequeue to ringbuffer: %s" % (e))
             break
 
 def main():
-    rbAuditEvent = StringCircularBuffer(8196)
+    rbAuditEvent = StringCircularBuffer(16392)
+    logging.basicConfig(filename='logger.log', level=logging.INFO)
     filename = "demofile"
+
+    logger.info("Start")
+    
 
     threads = []
     t1 = Thread(target=auditDispatcherThread, args=(rbAuditEvent,))

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-
 from ecies.utils import generate_key
 from ecies import encrypt, decrypt
+import logging
+logger = logging.getLogger(__name__)
 
 class Util(object):
 
@@ -25,7 +26,7 @@ class Util(object):
             f.close()
             self.index += 1
         except IOError as e:
-            print(e)
+            logger.error("IOError: %s" % (e))
             f.close()
 
     def readFromLogFile(self, index):
@@ -34,7 +35,7 @@ class Util(object):
             f = open("%s_%d" % (self.filenameEncrypted, index), 'rb')
             buf = f.read()
         except IOError as e:
-            print(e)
+            logger.error("IOError: %s" % (e))
             f.close()
         return buf
 
@@ -45,7 +46,7 @@ class Util(object):
             try:
                 self.writeToLogFile(encrypted, currentIndex)
             except IOError as e:
-                print(e)
+                logger.error("IOError: %s" % (e))
                 return
 
-            print("%d: %s" % (currentIndex, decrypt(self.sk_bytes, self.readFromLogFile(currentIndex))))
+            #logger.info("Decrypted: %s" % (decrypt(self.sk_bytes, self.readFromLogFile(currentIndex))))
