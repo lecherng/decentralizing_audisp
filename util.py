@@ -3,12 +3,13 @@ from ecies.utils import generate_key
 from ecies import encrypt, decrypt
 import logging
 import binascii
+from ipfs import IpfsMetadata, IPFS
 
 logger = logging.getLogger(__name__)
 
 class Util(object):
-
-    def __init__(self, filename, pubKey=None, privKey=None):
+    def __init__(self, filename, ipfsApiKey, pubKey=None, privKey=None):
+        self.ipfs = IPFS(ipfsApiKey)
         self.filename = filename
         self.filenameEncrypted = "%s_encrypted" % (filename)
         self.index = 0
@@ -22,10 +23,10 @@ class Util(object):
         else:
             self.pk_bytes = pubKey
 
-        logger.debug(f'pubKey {binascii.hexlify(self.pk_bytes)}')
-        logger.debug(f'privKey {binascii.hexlify(self.sk_bytes)}')
+        #logger.debug(f'pubKey {binascii.hexlify(self.pk_bytes)}')
+        #logger.debug(f'privKey {binascii.hexlify(self.sk_bytes)}')
 
-    def writeToLogFile(self, buffer, index):
+    def __writeToLogFile(self, buffer, index):
         try:
             f = open("%s_%d" % (self.filenameEncrypted, index), 'wb')
             f.write(buffer)
@@ -34,6 +35,12 @@ class Util(object):
         except IOError as e:
             logger.error("IOError: %s" % (e))
             f.close()
+
+    def __uploadToIPFS(self, index):
+        return self.ipfs.add("%s_%d" % (self.filenameEncrypted, index), "application/octet-stream")
+
+    def __uploadToBlockchain(self, ipfsMetadata):
+        return None
 
     def readFromLogFile(self, index):
         buf = ""
@@ -50,9 +57,11 @@ class Util(object):
             currentIndex = self.index
             self.filename = "%s_%d" % (self.filenameEncrypted, currentIndex)
             try:
-                self.writeToLogFile(encrypted, currentIndex)
+                self.__writeToLogFile(encrypted, currentIndex)
+                ipfsMetadata = self.__uploadToIPFS(currentIndex)
+                self.__uploadToBlockchain(ipfsMetadata)
             except IOError as e:
                 logger.error("IOError: %s" % (e))
                 return
 
-            logger.debug("Decrypted: %s" % (decrypt(self.sk_bytes, self.readFromLogFile(currentIndex))))
+            #logger.debug("Decrypted: %s" % (decrypt(self.sk_bytes, self.readFromLogFile(currentIndex))))

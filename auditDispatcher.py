@@ -25,6 +25,7 @@ import sys
 from circularBuffer import StringCircularBuffer
 from util import Util
 from auParser import AuParser
+from config import Config
 from threading import Thread
 import logging
 
@@ -106,21 +107,11 @@ def auditLoggerThread(rbAuditEvent, util):
             break
 
 def main():
+    config = Config()
     rbAuditEvent = StringCircularBuffer(16392)
-    logging.basicConfig(filename='logger.log', level=logging.INFO)
-    filename = "demofile"
-    pubKeyFile = "pubKey"
-    privKeyFile = "privKey"
+    logging.basicConfig(filename=config.loggerFilename, level=logging.DEBUG)
 
-    f = open(pubKeyFile, 'rb')
-    pubKey = f.read()
-    f.close()
-
-    f = open(privKeyFile, 'rb')
-    privKey = f.read()
-    f.close()
-
-    util = Util(filename, pubKey, privKey)
+    util = Util(config.filename, config.getApiKey(), config.getPubKey(), config.getPrivKey())
 
     logger.info("Start")
 

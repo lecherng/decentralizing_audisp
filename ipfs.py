@@ -3,28 +3,31 @@ import logging
 import os
 import requests
 import json
+import hashlib
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
 
-class IPFS(object):
-    def __init__(self, apiKeyFile):
-        if apiKeyFile == None:
-            logger.error(f"{apiKeyFile} variable is empty")
-            raise ValueError ("no apiKeyFile is found")
-        else:
-            try:
-                f = open(apiKeyFile, 'r')
-                self.apiKey = f.read().replace("\n", "")
-                f.close()
-            except Exception as e:
-                logger.error(f"{apiKeyFile} is not found")
-                raise ValueError ("no apiKeyFile is found")
+@dataclass
+class IpfsMetadata:
+    #status: str
+    #requestID: str
+    fileName: str
+    contentID: str
+    fileSize: int
+    timestamp: str
 
+    def getHashOfMetadata(self):
+        return hashlib.sha256(str(self).encode('utf-8')).hexdigest()
+
+class IPFS(object):
+    def __init__(self, apiKey):
+        self.apiKey = apiKey
         self.ipfsRestApiUrl = "https://api.quicknode.com/ipfs/rest/v1/"
         self.ipfsUrl = "https://vessels-swam-except.quicknode-ipfs.com/ipfs/"
         self.restAPIHeaders = { 'x-api-key': self.apiKey }
 
-    def add(self, filePath, fileType):
+    def add(self, filePath, fileType) -> IpfsMetadata:
         """https://guides.quicknode.com/docs/ipfs/Pinning/upload-object"""
         addAPI = "s3/put-object"
         fileName = os.path.basename(filePath)
@@ -37,11 +40,12 @@ class IPFS(object):
         logger.debug(f"payload: {payload}")
         logger.debug(f"files: {files}")
         responseJson = json.loads(requests.request("POST", url, headers=self.restAPIHeaders, data=payload, files=files).text)
-        logger.info(f"status: {responseJson['status']}, responseID: {responseJson['requestid']}, fileName: , {responseJson['pin']['name']}, contentID: {responseJson['pin']['cid']}")
 
-        return responseJson['status'], responseJson['requestid'], responseJson['pin']['cid'], responseJson['pin']['name']
+        #return IpfsMetadata(responseJson['status'], responseJson['requestid'], responseJson['pin']['name'], responseJson['pin']['cid'], int(responseJson['info']['size']), responseJson['created'])
+        return IpfsMetadata(responseJson['pin']['name'], responseJson['pin']['cid'], int(responseJson['info']['size']), responseJson['created'])
 
-    def getUsingRequestID(self, requestID):
+
+    def getUsingRequestID(self, requestID) -> None:
         """https://guides.quicknode.com/docs/ipfs/Pinning/get-object"""
         getAPI = f"s3/get-object/{requestID}"
 
@@ -49,7 +53,7 @@ class IPFS(object):
         response = requests.request("GET", url, headers=self.restAPIHeaders, data={})
         logger.info(response.text)
 
-    def getUsingCID(self, CID, fileName):
+    def getFileUsingCID(self, CID, fileName) -> None:
         url = f"{self.ipfsUrl}{CID}"
         fileName = url.split('/')[-1]
         with requests.get(url, stream=True) as r:
@@ -58,7 +62,7 @@ class IPFS(object):
                 for chunk in r.iter_content(chunk_size=8196):
                     f.write(chunk)
 
-    def deleteUsingRequestID(self, requestID):
+    def deleteUsingRequestID(self, requestID) -> None:
         """https://guides.quicknode.com/docs/ipfs/Pinning/delete-pinnedObject"""
         deleteAPI = f"pinning/{requestID}"
 
@@ -66,20 +70,39 @@ class IPFS(object):
         response = requests.request("DELETE", url, headers=self.restAPIHeaders, data={})
         logger.info(response.text)
 
-#from timeit import default_timer as timer
+    def getPinnedFile(self) -> list:
+        """https://www.quicknode.com/docs/ipfs/Pinning/get-all-pinnedObjects"""
+        pinnedFileApi = "pinning?pageNumber=1&perPage=10"
+        listOfFile = []
+
+        url = self.ipfsRestApiUrl + pinnedFileApi
+        #response = requests.request("GET", url, headers=self.restAPIHeaders, data={})
+        responseJson = json.loads(requests.request("GET", url, headers=self.restAPIHeaders, data={}).text)
+
+        for item in responseJson['data']:
+            listOfFile.append(
+                #IpfsMetadata(item['status'], item['requestId'], item['name'], item['cid'], int(item['size']), item['updatedAt'])
+                IpfsMetadata(item['name'], item['cid'], int(item['size']), item['updatedAt'])
+                )
+        logger.info(listOfFile)
+
+        return listOfFile
+
+from timeit import default_timer as timer
 
 def main():
     logging.basicConfig(filename='logger.log', level=logging.INFO)
 
     ipfs = IPFS("apiKey")
     #start = timer()
-    #status, resquestId, cid, name = ipfs.add("/home/yong/MyProject/decentralizing_ids/demofile_encrypted_0", "application/octet-stream")
+    #ipfsMetadata = ipfs.add("/home/yong/MyProject/decentralizing_ids/demofile_encrypted_3", "application/octet-stream")
     #end = timer()
     #logger.info(f"time: {end-start}")
-    #if status == "pinned":
+    #if ipfsMetadata.status == "pinned":
         #ipfs.getUsingRequestID(resquestId)
         #ipfs.deleteUsingRequestID(resquestId)
-        #ipfs.getUsingCID(cid, name)
+        #ipfs.getFileUsingCID(cid, name)
+        #ipfs.getPinnedFile()
 
 if  __name__ =='__main__':
-        main()
+    main()
