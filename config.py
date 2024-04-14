@@ -15,9 +15,15 @@ class Config(object):
         self.apiKeyFile = config['Filename']['IPFSApiKeyFile']
         self.filename = config['Filename']['EncryptedIDSFile']
         self.loggerFilename = config['Filename']['LoggerFile']
+        self.ethPrivKeyFile = config['Filename']['EthPrivKey']
 
         self.audispBufferSize = int(config['Buffer']['AudispBuffer'])
         self.maxAuditEvent = int(config['Buffer']['MaxAuditEvent'])
+
+        self.smartContractAddr = config['Ethereum']['SmartContractAddress']
+        self.accountAddr = config['Ethereum']['AccountAddress']
+        self.apiFile = config['Ethereum']['AbiFile']
+        self.urlProvider = config['Ethereum']['UrlProvider']
 
     def getPubKey(self):
         pubKey = None
@@ -52,8 +58,39 @@ class Config(object):
             raise ValueError ("no apiKeyFile is found")
         return apiKey
 
+    def getEthPrivKey(self):
+        ethPrivKey = None
+        try:
+            f = open(self.ethPrivKeyFile, 'r')
+            ethPrivKey = f.read().replace("\n", "")
+            f.close()
+        except Exception as _:
+            logger.error(f"{self.ethPrivKeyFile} is not found")
+            raise ValueError ("no ethPrivKeyFile is found")
+        return ethPrivKey
+
     def getAudispBufferSize(self):
         return self.audispBufferSize
 
     def getMaxAuditEvent(self):
         return self.maxAuditEvent
+
+    def getSmartContractAddr(self):
+        return self.smartContractAddr
+
+    def getAccountAddr(self):
+        return self.accountAddr
+
+    def getAbi(self):
+        abi = None
+        try:
+            f = open(self.apiFile, 'r')
+            abi = f.read()
+            f.close()
+        except Exception as _:
+            logger.error(f"{self.apiFile} is not found")
+            raise ValueError ("no apiFile is found")
+        return abi
+
+    def getUrlProvider(self):
+        return self.urlProvider
