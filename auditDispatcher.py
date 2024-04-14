@@ -73,7 +73,6 @@ def auditDispatcherThread(rbAuditEvent):
                 reloadConfig()
                 continue
             for line in buf:
-                #logger.info(line)
                 auparser.auditParse(line)
         except IOError as e:
             logger.error("IOError: %s" % (e))
@@ -82,12 +81,11 @@ def auditDispatcherThread(rbAuditEvent):
             logger.error("ValueError %s" % (e))
         if debug == 1: stop = 1
 
-def auditLoggerThread(rbAuditEvent, util):
+def auditLoggerThread(rbAuditEvent, util, config):
     global stop
     global hup
 
-    # ringBuffer for 512 Security Events
-    rbLogger = StringCircularBuffer(6144)
+    rbLogger = StringCircularBuffer(config.getMaxAuditEvent())
     while True:
         try:
             if not rbAuditEvent.is_empty() and not rbLogger.is_full():
@@ -108,7 +106,7 @@ def auditLoggerThread(rbAuditEvent, util):
 
 def main():
     config = Config()
-    rbAuditEvent = StringCircularBuffer(16392)
+    rbAuditEvent = StringCircularBuffer(config.getAudispBufferSize())
     logging.basicConfig(filename=config.loggerFilename, level=logging.DEBUG)
 
     util = Util(config.filename, config.getApiKey(), config.getPubKey(), config.getPrivKey())
@@ -117,7 +115,7 @@ def main():
 
     threads = []
     t1 = Thread(target=auditDispatcherThread, args=(rbAuditEvent,))
-    t2 = Thread(target=auditLoggerThread, args=(rbAuditEvent, util,))
+    t2 = Thread(target=auditLoggerThread, args=(rbAuditEvent, util, config))
     t1.start()
     t2.start()
     threads.append(t1)
