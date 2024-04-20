@@ -10,87 +10,77 @@ class Config(object):
         config = configparser.ConfigParser()
         config.read(self.configFile)
 
-        self.pubKeyFile = config['Filename']['PubKeyFile']
-        self.privKeyFile = config['Filename']['PrivKeyFile']
-        self.apiKeyFile = config['Filename']['IPFSApiKeyFile']
-        self.filename = config['Filename']['EncryptedIDSFile']
-        self.loggerFilename = config['Filename']['LoggerFile']
-        self.ethPrivKeyFile = config['Filename']['EthPrivKey']
+        self._pubKey = self.__readFromFile(config['Filename']['PubKeyFile'], 'rb')
+        self._privKey = self.__readFromFile(config['Filename']['PrivKeyFile'], 'rb')
+        self._apiKey = self.__readFromFile(config['Filename']['IPFSApiKeyFile'], 'r', True)
+        self._filename = config['Filename']['EncryptedIDSFile']
+        self._loggerFilename = config['Filename']['LoggerFile']
+        self._ethPrivKey = self.__readFromFile(config['Filename']['EthPrivKey'], 'r', True)
 
-        self.audispBufferSize = int(config['Buffer']['AudispBuffer'])
-        self.maxAuditEvent = int(config['Buffer']['MaxAuditEvent'])
+        self._audispBufferSize = int(config['Buffer']['AudispBuffer'])
+        self._maxAuditEvent = int(config['Buffer']['MaxAuditEvent'])
 
-        self.smartContractAddr = config['Ethereum']['SmartContractAddress']
-        self.accountAddr = config['Ethereum']['AccountAddress']
-        self.apiFile = config['Ethereum']['AbiFile']
-        self.urlProvider = config['Ethereum']['UrlProvider']
+        self._smartContractAddr = config['Ethereum']['SmartContractAddress']
+        self._accountAddr = config['Ethereum']['AccountAddress']
+        self._apiFile = self.__readFromFile(config['Ethereum']['AbiFile'], 'r')
+        self._urlProvider = config['Ethereum']['UrlProvider']
 
-    def getPubKey(self):
-        pubKey = None
+    def __readFromFile(self, path, mode, isRemoveNewLine = False):
+        buffer = None
         try:
-            f = open(self.pubKeyFile, 'rb')
-            pubKey = f.read()
-            f.close()
+            with open(path, mode) as f:
+                buffer = f.read()
+                if isRemoveNewLine: 
+                    buffer = buffer.replace("\n", "")
         except Exception as _:
-            logger.error(f"{self.pubKeyFile} is not found")
-            raise ValueError ("no pubKeyFile is found")
-        return pubKey
+            logger.error(f"{path} is not found")
+            raise ValueError (f"no {path} is found")
+        return buffer
+
+    @property
+    def pubKey(self):
+        return self._pubKey
     
-    def getPrivKey(self):   
-        privKey = None
-        try:
-            f = open(self.privKeyFile, 'rb')
-            privKey = f.read()
-            f.close()
-        except Exception as _:
-            logger.error(f"{self.privKeyFile} is not found")
-            raise ValueError ("no privKeyFile is found")
-        return privKey
+    @property
+    def privKey(self):
+        return self._privKey
     
-    def getApiKey(self):  
-        apiKey = None
-        try:
-            f = open(self.apiKeyFile, 'r')
-            apiKey = f.read().replace("\n", "")
-            f.close()
-        except Exception as _:
-            logger.error(f"{self.apiKeyFile} is not found")
-            raise ValueError ("no apiKeyFile is found")
-        return apiKey
-
-    def getEthPrivKey(self):
-        ethPrivKey = None
-        try:
-            f = open(self.ethPrivKeyFile, 'r')
-            ethPrivKey = f.read().replace("\n", "")
-            f.close()
-        except Exception as _:
-            logger.error(f"{self.ethPrivKeyFile} is not found")
-            raise ValueError ("no ethPrivKeyFile is found")
-        return ethPrivKey
-
-    def getAudispBufferSize(self):
-        return self.audispBufferSize
-
-    def getMaxAuditEvent(self):
-        return self.maxAuditEvent
-
-    def getSmartContractAddr(self):
-        return self.smartContractAddr
-
-    def getAccountAddr(self):
-        return self.accountAddr
-
-    def getAbi(self):
-        abi = None
-        try:
-            f = open(self.apiFile, 'r')
-            abi = f.read()
-            f.close()
-        except Exception as _:
-            logger.error(f"{self.apiFile} is not found")
-            raise ValueError ("no apiFile is found")
-        return abi
-
-    def getUrlProvider(self):
-        return self.urlProvider
+    @property
+    def apiKey(self):
+        return self._apiKey
+    
+    @property
+    def filename(self):
+        return self._filename
+    
+    @property
+    def loggerFilename(self):
+        return self._loggerFilename
+    
+    @property
+    def ethPrivKey(self):
+        return self._ethPrivKey
+    
+    @property
+    def audispBufferSize(self):
+        return self._audispBufferSize
+    
+    @property
+    def maxAuditEvent(self):
+        return self._maxAuditEvent
+    
+    @property
+    def smartContractAddr(self):
+        return self._smartContractAddr
+    
+    @property
+    def accountAddr(self):
+        return self._accountAddr
+    
+    @property
+    def apiFile(self):
+        return self._apiFile
+    
+    @property
+    def urlProvider(self):
+        return self._urlProvider

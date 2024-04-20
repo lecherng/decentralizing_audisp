@@ -89,20 +89,22 @@ class IPFS(object):
         return listOfFile
 
 from timeit import default_timer as timer
+from config import Config
 
 def main():
     logging.basicConfig(filename='logger.log', level=logging.INFO)
+    config = Config()
 
-    ipfs = IPFS("apiKey")
+    #ipfs = IPFS(config.apiKey)
     #start = timer()
-    #ipfsMetadata = ipfs.add("/home/yong/MyProject/decentralizing_ids/demofile_encrypted_3", "application/octet-stream")
+    #ipfsMetadata = ipfs.add("/home/yong/MyProject/decentralizing_audisp/demofile_encrypted_0", "application/octet-stream")
     #end = timer()
     #logger.info(f"time: {end-start}")
     #if ipfsMetadata.status == "pinned":
         #ipfs.getUsingRequestID(resquestId)
         #ipfs.deleteUsingRequestID(resquestId)
         #ipfs.getFileUsingCID(cid, name)
-        #ipfs.getPinnedFile()
+    #    ipfs.getPinnedFile()
 
 if  __name__ =='__main__':
     main()

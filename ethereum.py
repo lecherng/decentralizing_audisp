@@ -62,7 +62,7 @@ def main():
     logging.basicConfig(filename='logger.log', level=logging.INFO)
 
     config = Config()
-    test = Ethereum(config.getEthPrivKey(), config.getAccountAddr(), config.getSmartContractAddr(), config.getAbi(), config.getUrlProvider())
+    test = Ethereum(config.ethPrivKey, config.accountAddr, config.smartContractAddr, config.apiFile, config.urlProvider)
     #test.getMetadataFromBlockchain()
     #test.addMetadataToBlockchain("QmcWEEXFxBERHiEYYA9yXgzbA9TTJ61N66GKFJ1ssmec97")
     #test.getMetadataFromBlockchain()

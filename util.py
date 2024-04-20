@@ -28,13 +28,11 @@ class Util(object):
 
     def __writeToLogFile(self, buffer, index):
         try:
-            f = open("%s_%d" % (self.filenameEncrypted, index), 'wb')
-            f.write(buffer)
-            f.close()
+            with open("%s_%d" % (self.filenameEncrypted, index), 'wb') as f:
+                f.write(buffer)
             self.index += 1
         except IOError as e:
             logger.error("IOError: %s" % (e))
-            f.close()
 
     def __uploadToIPFS(self, index):
         return self.ipfs.add("%s_%d" % (self.filenameEncrypted, index), "application/octet-stream")
@@ -45,11 +43,10 @@ class Util(object):
     def readFromLogFile(self, index):
         buf = ""
         try:
-            f = open("%s_%d" % (self.filenameEncrypted, index), 'rb')
-            buf = f.read()
+            with open("%s_%d" % (self.filenameEncrypted, index), 'rb') as f:
+                buf = f.read()
         except IOError as e:
             logger.error("IOError: %s" % (e))
-            f.close()
         return buf
 
     def encryptLogFile(self, buf):

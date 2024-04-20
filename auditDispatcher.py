@@ -63,8 +63,8 @@ def auditDispatcherThread(rbAuditEvent):
     while stop == 0:
         try:
             if debug == 1:
-                f = open("test.log", "r")
-                buf = f.readlines()
+                with open("2021-09-28T163346_system.log", "r") as f:
+                    buf = f.readlines()
             else:
                 #buf=sys.stdin.readlines() # for testing
                 buf=sys.stdin            # for actual
@@ -85,7 +85,7 @@ def auditLoggerThread(rbAuditEvent, util, config):
     global stop
     global hup
 
-    rbLogger = StringCircularBuffer(config.getMaxAuditEvent())
+    rbLogger = StringCircularBuffer(config.maxAuditEvent)
     while True:
         try:
             if not rbAuditEvent.is_empty() and not rbLogger.is_full():
@@ -106,10 +106,10 @@ def auditLoggerThread(rbAuditEvent, util, config):
 
 def main():
     config = Config()
-    rbAuditEvent = StringCircularBuffer(config.getAudispBufferSize())
+    rbAuditEvent = StringCircularBuffer(config.audispBufferSize)
     logging.basicConfig(filename=config.loggerFilename, level=logging.DEBUG)
 
-    util = Util(config.filename, config.getApiKey(), config.getPubKey(), config.getPrivKey())
+    util = Util(config.filename, config.apiKey, config.pubKey, config.privKey)
 
     logger.info("Start")
 
