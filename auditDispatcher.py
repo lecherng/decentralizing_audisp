@@ -109,7 +109,7 @@ def main():
     rbAuditEvent = StringCircularBuffer(config.audispBufferSize)
     logging.basicConfig(filename=config.loggerFilename, level=logging.DEBUG)
 
-    util = Util(config.filename, config.apiKey, config.pubKey, config.privKey)
+    util = Util(config)
 
     logger.info("Start")
 

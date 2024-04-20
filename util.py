@@ -4,24 +4,28 @@ from ecies import encrypt, decrypt
 import logging
 import binascii
 from ipfs import IpfsMetadata, IPFS
+from config import Config
+from ethereum import Ethereum
 
 logger = logging.getLogger(__name__)
 
 class Util(object):
-    def __init__(self, filename, ipfsApiKey, pubKey=None, privKey=None):
-        self.ipfs = IPFS(ipfsApiKey)
-        self.filename = filename
-        self.filenameEncrypted = "%s_encrypted" % (filename)
+    def __init__(self, config):
+        self.ipfsHandler = IPFS(config.apiKey)
+        self.ethereumHandler = Ethereum(config.ethPrivKey, config.accountAddr, config.smartContractAddr, config.apiFile, config.urlProvider)
+        self.filename = config.filename
+        self.filenameEncrypted = "%s_encrypted" % (self.filename)
         self.index = 0
-        if privKey == None:
+        self.previousBlockchainHashTx = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        if config.privKey == None:
             self.sk_bytes = generate_key().secret
         else:
-            self.sk_bytes = privKey
+            self.sk_bytes = config.privKey
 
-        if pubKey == None:
+        if config.pubKey == None:
             self.pk_bytes = self.sk_bytes.public_key.format(False)
         else:
-            self.pk_bytes = pubKey
+            self.pk_bytes = config.pubKey
 
         #logger.debug(f'pubKey {binascii.hexlify(self.pk_bytes)}')
         #logger.debug(f'privKey {binascii.hexlify(self.sk_bytes)}')
@@ -35,9 +39,10 @@ class Util(object):
             logger.error("IOError: %s" % (e))
 
     def __uploadToIPFS(self, index):
-        return self.ipfs.add("%s_%d" % (self.filenameEncrypted, index), "application/octet-stream")
+        return self.ipfsHandler.add("%s_%d" % (self.filenameEncrypted, index), "application/octet-stream")
 
     def __uploadToBlockchain(self, ipfsMetadata):
+        self.previousBlockchainHashTx = self.ethereumHandler.addMetadataToBlockchain(ipfsMetadata.contentID)
         return None
 
     def readFromLogFile(self, index):
@@ -51,6 +56,11 @@ class Util(object):
 
     def encryptLogFile(self, buf):
             encrypted = encrypt(self.pk_bytes, buf)
+            #TODO
+            # append previous CID in the payload
+            # define some header for this.
+            # | block index | previous hashTx |
+
             currentIndex = self.index
             self.filename = "%s_%d" % (self.filenameEncrypted, currentIndex)
             try:
