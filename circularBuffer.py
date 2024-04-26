@@ -4,36 +4,40 @@ class StringCircularBuffer(object):
     def __init__(self, max_size=10):
         """Initialize the CircularBuffer with a max_size if set, otherwise
         max_size will elementsdefault to 10"""
-        self.buffer = [None] * max_size
-        self.head = 0
-        self.tail = 0
-        self.max_size = max_size
-        self.isFull = False
-        self.isEmpty = True
-        self.totalSize = 0
+        self._buffer = [None] * max_size
+        self._head = 0
+        self._tail = 0
+        self._max_size = max_size
+        self._isFull = False
+        self._isEmpty = True
+        self._totalSize = 0
 
     def __str__(self):
         """Return a formatted string representation of this CircularBuffer."""
-        items = ['{!r}'.format(item) for item in self.buffer]
+        items = ['{!r}'.format(item) for item in self._buffer]
         return '[' + ', '.join(items) + ']'
 
-    def size(self):
+    def __size(self):
         """Return the size of the CircularBuffer """
-        return self.totalSize
+        return self._totalSize
+
+    def __front(self):
+        """Return the item at the front of the CircularBuffer """
+        return self._buffer[self._head]
 
     def is_empty(self):
         """Return True if the head of the CircularBuffer is equal to the tail,
         otherwise return False """
-        return self.isEmpty
+        return self._isEmpty
 
     def is_full(self):
         """Return True if the tail of the CircularBuffer is one before the head,
         otherwise return False """
-        return self.isFull
+        return self._isFull
 
     def enqueue(self, item):
         """Insert an item at the back of the CircularBuffer """
-        if self.isFull:
+        if self._isFull:
             raise OverflowError (
                 "CircularBuffer is full, unable to enqueue item"
             )
@@ -42,49 +46,45 @@ class StringCircularBuffer(object):
                 "Invalid type"
             )
         
-        self.buffer[self.tail] = item
+        self._buffer[self._tail] = item
         #self.tail = (self.tail + 1) % self.max_size 
-        if self.isEmpty == True:
-            self.isEmpty = False   
-        elif (self.tail + 1) % self.max_size == self.head: 
-            self.isFull = True
+        if self._isEmpty == True:
+            self._isEmpty = False   
+        elif (self._tail + 1) % self._max_size == self._head: 
+            self._isFull = True
             
-        self.tail = (self.tail + 1) % self.max_size
+        self._tail = (self._tail + 1) % self._max_size
         # self.max_size increases by one to ease counting of the index
-        self.totalSize = (self.totalSize + 1) % (self.max_size + 1)
-
-    def front(self):
-        """Return the item at the front of the CircularBuffer """
-        return self.buffer[self.head]
+        self._totalSize = (self._totalSize + 1) % (self._max_size + 1)
 
     def dequeue(self):
         """Return the item at the front of the Circular Buffer and remove it """
-        if self.isEmpty:
+        if self._isEmpty:
             raise OverflowError (
                 "CircularBuffer is empty, unable to dequeue item"
             )
-        item = self.buffer[self.head]
-        self.buffer[self.head] = None
-        self.head = (self.head + 1) % self.max_size
+        item = self._buffer[self._head]
+        self._buffer[self._head] = None
+        self._head = (self._head + 1) % self._max_size
         
-        if self.isFull:
-            self.isFull = False
-        elif self.head == self.tail:
-            self.isEmpty = True
+        if self._isFull:
+            self._isFull = False
+        elif self._head == self._tail:
+            self._isEmpty = True
 
         # self.max_size increases by one to ease counting of the index
-        self.totalSize = (self.totalSize - 1) % (self.max_size + 1)
+        self._totalSize = (self._totalSize - 1) % (self._max_size + 1)
         return item
     
     def flush_content(self):
         """Flush all the content."""
-        if self.isEmpty:
+        if self._isEmpty:
             return None
         
         items = b''
-        items = items.join(self.dequeue().encode() for _ in range(self.totalSize))
-        self.front()
-        self.tail = self.head
+        items = items.join(self.dequeue().encode() for _ in range(self._totalSize))
+        self.__front()
+        self._tail = self._head
         return items
 
 def main():

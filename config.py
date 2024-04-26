@@ -5,10 +5,10 @@ logger = logging.getLogger(__name__)
 
 class Config(object):
     def __init__(self):
-        self.configFile = "decentralized_audisp.conf"
+        self._configFile = "decentralized_audisp.conf"
 
         config = configparser.ConfigParser()
-        config.read(self.configFile)
+        config.read(self._configFile)
 
         self._pubKey = self.__readFromFile(config['Filename']['PubKeyFile'], 'rb')
         self._privKey = self.__readFromFile(config['Filename']['PrivKeyFile'], 'rb')

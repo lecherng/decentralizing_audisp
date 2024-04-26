@@ -12,59 +12,59 @@ logger = logging.getLogger(__name__)
 
 class Util(object):
     def __init__(self, config):
-        self.ipfsHandler = IPFS(config.apiKey)
-        self.ethereumHandler = Ethereum(config.ethPrivKey, config.accountAddr, config.smartContractAddr, config.apiFile, config.urlProvider)
-        self.filename = config.filename
-        self.filenameEncrypted = "%s_encrypted" % (self.filename)
-        self.index = 0
-        self.previousBlockchainHashTx = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+        self._ipfsHandler = IPFS(config.apiKey)
+        self._ethereumHandler = Ethereum(config.ethPrivKey, config.accountAddr, config.smartContractAddr, config.apiFile, config.urlProvider)
+        self._filename = config.filename
+        self._filenameEncrypted = "%s_encrypted" % (self._filename)
+        self._index = 0
+        self._previousBlockchainHashTx = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
         if config.privKey == None:
-            self.sk_bytes = generate_key().secret
+            self._skBytes = generate_key().secret
         else:
-            self.sk_bytes = config.privKey
+            self._skBytes = config.privKey
 
         if config.pubKey == None:
-            self.pk_bytes = self.sk_bytes.public_key.format(False)
+            self._pkBytes = self._skBytes.public_key.format(False)
         else:
-            self.pk_bytes = config.pubKey
+            self._pkBytes = config.pubKey
 
         #logger.debug(f'pubKey {binascii.hexlify(self.pk_bytes)}')
         #logger.debug(f'privKey {binascii.hexlify(self.sk_bytes)}')
 
     def __writeToLogFile(self, buffer, index):
         try:
-            with open("%s_%d" % (self.filenameEncrypted, index), 'wb') as f:
+            with open("%s_%d" % (self._filenameEncrypted, index), 'wb') as f:
                 f.write(buffer)
-            self.index += 1
+            self._index += 1
         except IOError as e:
             logger.error("IOError: %s" % (e))
 
     def __uploadToIPFS(self, index):
-        return self.ipfsHandler.add("%s_%d" % (self.filenameEncrypted, index), "application/octet-stream")
+        return self._ipfsHandler.add("%s_%d" % (self._filenameEncrypted, index), "application/octet-stream")
 
     def __uploadToBlockchain(self, ipfsMetadata):
-        self.previousBlockchainHashTx = self.ethereumHandler.addMetadataToBlockchain(ipfsMetadata.contentID)
+        self._previousBlockchainHashTx = self._ethereumHandler.addMetadataToBlockchain(ipfsMetadata.contentID)
         return None
 
     def readFromLogFile(self, index):
         buf = ""
         try:
-            with open("%s_%d" % (self.filenameEncrypted, index), 'rb') as f:
+            with open("%s_%d" % (self._filenameEncrypted, index), 'rb') as f:
                 buf = f.read()
         except IOError as e:
             logger.error("IOError: %s" % (e))
         return buf
 
     def encryptLogFile(self, buf):
-            currentIndex = self.index
+            currentIndex = self._index
 
             # | block index (8Bytes) | previous hashTx (32Bytes) | ciphertext |
             encrypted = bytearray()
             encrypted.extend(struct.pack('>Q', currentIndex))
-            encrypted.extend(self.previousBlockchainHashTx)
-            encrypted.extend(encrypt(self.pk_bytes, buf))
+            encrypted.extend(self._previousBlockchainHashTx)
+            encrypted.extend(encrypt(self._pkBytes, buf))
 
-            self.filename = "%s_%d" % (self.filenameEncrypted, currentIndex)
+            self._filename = "%s_%d" % (self._filenameEncrypted, currentIndex)
             try:
                 self.__writeToLogFile(encrypted, currentIndex)
                 ipfsMetadata = self.__uploadToIPFS(currentIndex)
