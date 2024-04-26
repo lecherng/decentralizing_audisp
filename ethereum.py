@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import logging
+import binascii
 from web3 import Web3, eth
 from timeit import default_timer as timer
 
@@ -48,7 +49,7 @@ class Ethereum(object):
         self.web3.eth.wait_for_transaction_receipt(txHash)
         end = timer()
         logger.info(f"time: {end-start}")
-        logger.info(f"txHash: {txHash}")
+        logger.info(f"txHash: {binascii.hexlify(txHash)}")
         return txHash
 
     def getTransactionByHash(self, txHash):

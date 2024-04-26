@@ -63,7 +63,7 @@ def auditDispatcherThread(rbAuditEvent):
     while stop == 0:
         try:
             if debug == 1:
-                with open("2021-09-28T163346_system.log", "r") as f:
+                with open("2021-09-28T174851_audit.log", "r") as f:
                     buf = f.readlines()
             else:
                 #buf=sys.stdin.readlines() # for testing

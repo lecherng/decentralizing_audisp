@@ -3,6 +3,7 @@ from ecies.utils import generate_key
 from ecies import encrypt, decrypt
 import logging
 import binascii
+import struct
 from ipfs import IpfsMetadata, IPFS
 from config import Config
 from ethereum import Ethereum
@@ -16,7 +17,7 @@ class Util(object):
         self.filename = config.filename
         self.filenameEncrypted = "%s_encrypted" % (self.filename)
         self.index = 0
-        self.previousBlockchainHashTx = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        self.previousBlockchainHashTx = b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
         if config.privKey == None:
             self.sk_bytes = generate_key().secret
         else:
@@ -55,13 +56,14 @@ class Util(object):
         return buf
 
     def encryptLogFile(self, buf):
-            encrypted = encrypt(self.pk_bytes, buf)
-            #TODO
-            # append previous CID in the payload
-            # define some header for this.
-            # | block index | previous hashTx |
-
             currentIndex = self.index
+
+            # | block index (8Bytes) | previous hashTx (32Bytes) | ciphertext |
+            encrypted = bytearray()
+            encrypted.extend(struct.pack('>Q', currentIndex))
+            encrypted.extend(self.previousBlockchainHashTx)
+            encrypted.extend(encrypt(self.pk_bytes, buf))
+
             self.filename = "%s_%d" % (self.filenameEncrypted, currentIndex)
             try:
                 self.__writeToLogFile(encrypted, currentIndex)
