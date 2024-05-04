@@ -25,6 +25,8 @@ class Config(object):
         self._apiFile = self.__readFromFile(config['Ethereum']['AbiFile'], 'r')
         self._urlProvider = config['Ethereum']['UrlProvider']
 
+        self._etherScanApiKey = self.__readFromFile(config['Etherscan']['ApiKey'], 'r')
+
     def __readFromFile(self, path, mode, isRemoveNewLine = False):
         buffer = None
         try:
@@ -84,3 +86,7 @@ class Config(object):
     @property
     def urlProvider(self):
         return self._urlProvider
+
+    @property
+    def etherScanApiKey(self):
+        return self._etherScanApiKey

@@ -55,6 +55,10 @@ class Ethereum(object):
             return None
         return eth.Eth.get_transaction(txHash)
 
+    def getCIDFromTransactionInput(self, input):
+        _, funcParam = self._contract.decode_function_input(input)
+        return funcParam["x"]
+
 from config import Config
 
 def main():
@@ -62,9 +66,6 @@ def main():
 
     config = Config()
     test = Ethereum(config.ethPrivKey, config.accountAddr, config.smartContractAddr, config.apiFile, config.urlProvider)
-    #test.getMetadataFromBlockchain()
-    #test.addMetadataToBlockchain("QmcWEEXFxBERHiEYYA9yXgzbA9TTJ61N66GKFJ1ssmec97")
-    #test.getMetadataFromBlockchain()
 
 if  __name__ =='__main__':
     main()

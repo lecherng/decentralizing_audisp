@@ -46,14 +46,19 @@ class Util(object):
         self._previousBlockchainHashTx = self._ethereumHandler.addMetadataToBlockchain(ipfsMetadata.contentID)
         return None
 
-    def readFromLogFile(self, index):
+    def __readFromLogFile(self, filePath):
         buf = ""
         try:
-            with open("%s_%d" % (self._filenameEncrypted, index), 'rb') as f:
+            with open(filePath, 'rb') as f:
+                f.seek(40)
                 buf = f.read()
         except IOError as e:
             logger.error("IOError: %s" % (e))
         return buf
+
+    def decryptLogFile(self, filePath):
+        with open(f"{filePath}_decrypted", 'wb') as f:
+            f.write(decrypt(self._skBytes, self.__readFromLogFile(filePath)))
 
     def encryptLogFile(self, buf):
             currentIndex = self._index
@@ -73,4 +78,4 @@ class Util(object):
                 logger.error("IOError: %s" % (e))
                 return
 
-            #logger.debug("Decrypted: %s" % (decrypt(self.sk_bytes, self.readFromLogFile(currentIndex))))
+            #logger.debug("Decrypted: %s" % (decrypt(self.sk_bytes, self.__readFromLogFile(currentIndex))))
